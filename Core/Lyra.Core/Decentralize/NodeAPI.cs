@@ -10,6 +10,8 @@ using Lyra.Core.Accounts;
 using Lyra.Core.Cryptography;
 using Neo;
 using System.Collections.Generic;
+using Lyra.Core.Authorizers;
+using Clifton.Blockchain;
 
 namespace Lyra.Core.Decentralize
 {
@@ -373,6 +375,45 @@ namespace Lyra.Core.Decentralize
             }
 
             return result;
+        }
+
+        public async Task<MultiBlockAPIResult> GetBlocksByConsolidation(string AccountId, string Signature, string consolidationHash)
+        {
+            var result = new MultiBlockAPIResult();
+            if (!await VerifyClientAsync(AccountId, Signature))
+            {
+                result.ResultCode = APIResultCodes.APISignatureValidationFailed;
+                return result;
+            }
+
+            var consBlock = (await BlockChain.Singleton.FindBlockByHashAsync(consolidationHash)) as ConsolidationBlock;
+            if(consBlock == null)
+            {
+                result.ResultCode = APIResultCodes.BlockNotFound;
+                return result;
+            }
+
+            var mt = new MerkleTree();
+            var blocks = new Block[consBlock.blockHashes.Count];
+            for (int i = 0; i < blocks.Length; i++)
+            {
+                blocks[i] = await BlockChain.Singleton.FindBlockByHashAsync(consBlock.blockHashes[i]);
+                mt.AppendLeaf(MerkleHash.Create(blocks[i].Hash));
+            }
+            var merkelTreeHash = mt.BuildTree().ToString();
+
+            if(consBlock.MerkelTreeHash == merkelTreeHash)
+            {
+                result.SetBlocks(blocks);
+                result.ResultCode = APIResultCodes.Success;
+                return result;
+            }
+            else
+            {
+                // never replicate error data
+                result.ResultCode = APIResultCodes.BlockValidationFailed;
+                return result;
+            }            
         }
 
         public async Task<MultiBlockAPIResult> GetConsolidationBlocks(string AccountId, string Signature, long startHeight)

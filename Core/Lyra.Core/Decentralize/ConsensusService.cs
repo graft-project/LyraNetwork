@@ -400,6 +400,9 @@ namespace Lyra.Core.Decentralize
 
         private async Task CreateConsolidateBlockAsync()
         {
+            if (_activeConsensus.Values.Count > 0 && _activeConsensus.Values.Any(a => a.State?.InputMsg.Block is ConsolidationBlock))
+                return;
+
             var lastCons = await BlockChain.Singleton.GetLastConsolidationBlockAsync();
             var collection = await BlockChain.Singleton.GetAllUnConsolidatedBlocksAsync();
             _log.LogInformation($"Creating ConsolidationBlock... ");
@@ -411,9 +414,17 @@ namespace Lyra.Core.Decentralize
             };
 
             var mt = new MerkleTree();
+            decimal feeAggregated = 0;
             foreach(var hash in consBlock.blockHashes)
             {
                 mt.AppendLeaf(MerkleHash.Create(hash));
+
+                // aggregate fees
+                var transBlock = (await BlockChain.Singleton.FindBlockByHashAsync(hash)) as TransactionBlock;
+                if(transBlock != null)
+                {
+                    feeAggregated += transBlock.Fee;
+                }
             }
             
             consBlock.MerkelTreeHash = mt.BuildTree().ToString();
