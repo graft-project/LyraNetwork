@@ -24,7 +24,7 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="3.1.2" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="3.1.2" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.2" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="Plugin.Badge" Version="2.2.1" />
     <PackageReference Include="ReactiveUI" Version="11.2.1" />
     <PackageReference Include="ReactiveUI.XamForms" Version="11.2.1" />
